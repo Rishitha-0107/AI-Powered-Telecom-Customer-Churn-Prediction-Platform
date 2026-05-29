@@ -10,10 +10,52 @@ import gdown
 # =========================================
 
 st.set_page_config(
-    page_title="Telecom Customer Churn Platform",
+    page_title="AI Telecom Churn Platform",
     page_icon="📡",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# =========================================
+# CUSTOM CSS
+# =========================================
+
+st.markdown("""
+<style>
+
+.main {
+    background-color: #0E1117;
+}
+
+.stApp {
+    background-color: #0E1117;
+    color: white;
+}
+
+.metric-card {
+    background: linear-gradient(135deg,#1f2937,#111827);
+    padding: 25px;
+    border-radius: 18px;
+    border: 1px solid #374151;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    text-align: center;
+}
+
+.recommendation-card {
+    background: #111827;
+    padding: 18px;
+    border-radius: 14px;
+    border-left: 5px solid #3B82F6;
+    margin-bottom: 10px;
+}
+
+.big-font {
+    font-size:20px !important;
+    font-weight:bold;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # =========================================
 # BASE DIRECTORY
@@ -22,15 +64,13 @@ st.set_page_config(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =========================================
-# GOOGLE DRIVE FILE IDS
+# GOOGLE DRIVE MODEL IDS
 # =========================================
 
 CHURN_MODEL_ID = "1M74k49wB6W_WSdYD5D6hEGxAl8TnaCur"
 
-REVENUE_MODEL_ID = "1SyqLpgT4MhUgotP1K3CJCxhYxjUzAAns"
-
 # =========================================
-# MODEL PATHS
+# MODEL PATH
 # =========================================
 
 CHURN_MODEL_PATH = os.path.join(
@@ -38,13 +78,8 @@ CHURN_MODEL_PATH = os.path.join(
     "churn_model.pkl"
 )
 
-REVENUE_MODEL_PATH = os.path.join(
-    BASE_DIR,
-    "revenue_model.pkl"
-)
-
 # =========================================
-# DOWNLOAD CHURN MODEL
+# DOWNLOAD MODEL
 # =========================================
 
 if not os.path.exists(CHURN_MODEL_PATH):
@@ -60,28 +95,10 @@ if not os.path.exists(CHURN_MODEL_PATH):
     )
 
 # =========================================
-# DOWNLOAD REVENUE MODEL
-# =========================================
-
-if not os.path.exists(REVENUE_MODEL_PATH):
-
-    revenue_url = (
-        f"https://drive.google.com/uc?id={REVENUE_MODEL_ID}"
-    )
-
-    gdown.download(
-        revenue_url,
-        REVENUE_MODEL_PATH,
-        quiet=False
-    )
-
-# =========================================
 # LOAD MODELS
 # =========================================
 
 churn_model = joblib.load(CHURN_MODEL_PATH)
-
-revenue_model = joblib.load(REVENUE_MODEL_PATH)
 
 kmeans_model = joblib.load(
     os.path.join(BASE_DIR, "kmeans_model.pkl")
@@ -96,14 +113,20 @@ encoders = joblib.load(
 )
 
 # =========================================
-# TITLE
+# HEADER
 # =========================================
 
-st.title("📡 AI-Powered Telecom Customer Churn Prediction Platform")
+st.markdown("""
+<h1 style='text-align:center;color:#60A5FA;'>
+📡 AI-Powered Telecom Customer Churn Platform
+</h1>
+""", unsafe_allow_html=True)
 
-st.markdown(
-    "### Customer Analytics & Business Intelligence Dashboard"
-)
+st.markdown("""
+<p style='text-align:center;font-size:20px;color:#D1D5DB;'>
+Customer Analytics • Churn Prediction • Retention Intelligence
+</p>
+""", unsafe_allow_html=True)
 
 st.divider()
 
@@ -111,34 +134,25 @@ st.divider()
 # SIDEBAR
 # =========================================
 
-st.sidebar.header("Customer Details")
+st.sidebar.image(
+    "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+    width=120
+)
+
+st.sidebar.title("📋 Customer Details")
 
 input_data = {}
 
 # =========================================
-# INPUT FEATURES
+# INPUTS
 # =========================================
 
 for feature in features:
 
-    # Numeric Fields
-    if feature in [
-        "tenure",
-        "MonthlyCharges",
-        "TotalCharges",
-        "SeniorCitizen"
-    ]:
-
-        input_data[feature] = st.sidebar.number_input(
-            feature,
-            value=0.0
-        )
-
-    # Gender
-    elif feature == "gender":
+    if feature == "gender":
 
         gender = st.sidebar.selectbox(
-            "Gender",
+            "👤 Gender",
             ["Female", "Male"]
         )
 
@@ -146,7 +160,6 @@ for feature in features:
             1 if gender == "Male" else 0
         )
 
-    # Yes / No Features
     elif feature in [
         "Partner",
         "Dependents",
@@ -155,7 +168,7 @@ for feature in features:
     ]:
 
         value = st.sidebar.selectbox(
-            feature,
+            f"✅ {feature}",
             ["No", "Yes"]
         )
 
@@ -163,11 +176,10 @@ for feature in features:
             1 if value == "Yes" else 0
         )
 
-    # Internet Service
     elif feature == "InternetService":
 
         value = st.sidebar.selectbox(
-            "Internet Service",
+            "🌐 Internet Service",
             ["DSL", "Fiber optic", "No"]
         )
 
@@ -179,11 +191,10 @@ for feature in features:
 
         input_data[feature] = mapping[value]
 
-    # Contract
     elif feature == "Contract":
 
         value = st.sidebar.selectbox(
-            "Contract Type",
+            "📑 Contract Type",
             [
                 "Month-to-month",
                 "One year",
@@ -199,11 +210,10 @@ for feature in features:
 
         input_data[feature] = mapping[value]
 
-    # Payment Method
     elif feature == "PaymentMethod":
 
         value = st.sidebar.selectbox(
-            "Payment Method",
+            "💳 Payment Method",
             [
                 "Electronic check",
                 "Mailed check",
@@ -221,7 +231,42 @@ for feature in features:
 
         input_data[feature] = mapping[value]
 
-    # Default Numeric
+    elif feature == "tenure":
+
+        input_data[feature] = st.sidebar.slider(
+            "📅 Tenure (Months)",
+            0,
+            72,
+            12
+        )
+
+    elif feature == "MonthlyCharges":
+
+        input_data[feature] = st.sidebar.slider(
+            "💰 Monthly Charges",
+            0,
+            500,
+            75
+        )
+
+    elif feature == "TotalCharges":
+
+        input_data[feature] = st.sidebar.number_input(
+            "💵 Total Charges",
+            value=1000.0
+        )
+
+    elif feature == "SeniorCitizen":
+
+        value = st.sidebar.selectbox(
+            "🧓 Senior Citizen",
+            ["No", "Yes"]
+        )
+
+        input_data[feature] = (
+            1 if value == "Yes" else 0
+        )
+
     else:
 
         input_data[feature] = st.sidebar.number_input(
@@ -230,19 +275,22 @@ for feature in features:
         )
 
 # =========================================
-# CREATE DATAFRAME
+# DATAFRAME
 # =========================================
 
 input_df = pd.DataFrame([input_data])
 
 # =========================================
-# ANALYZE BUTTON
+# BUTTON
 # =========================================
 
-if st.button("🔍 Analyze Customer"):
+if st.button(
+    "🚀 Analyze Customer",
+    use_container_width=True
+):
 
     # =====================================
-    # CHURN PREDICTION
+    # PREDICTIONS
     # =====================================
 
     churn_prediction = (
@@ -253,115 +301,81 @@ if st.button("🔍 Analyze Customer"):
         churn_model.predict_proba(input_df)[0][1] * 100
     )
 
-    # =====================================
-    # REVENUE LOSS PREDICTION
-    # =====================================
-
-    # =====================================
-# REVENUE LOSS ESTIMATION
-# =====================================
-
-monthly_charges = input_data.get(
-    "MonthlyCharges",
-    0
-)
-
-tenure = input_data.get(
-    "tenure",
-    1
-)
-
-# Estimated revenue risk
-revenue_loss = (
-    monthly_charges * 0.35
-)
-
-# High churn customers lose more
-if churn_probability > 80:
-
-    revenue_loss *= 2
-
-elif churn_probability > 50:
-
-    revenue_loss *= 1.5
-    # =====================================
-    # CUSTOMER SEGMENTATION
-    # =====================================
-
     cluster = (
         kmeans_model.predict(input_df)[0]
     )
 
     # =====================================
-    # RETENTION RECOMMENDATIONS
+    # REVENUE ESTIMATION
     # =====================================
 
-    recommendations = []
+    monthly_charges = input_data.get(
+        "MonthlyCharges",
+        0
+    )
+
+    revenue_loss = (
+        monthly_charges * 0.35
+    )
 
     if churn_probability > 80:
 
-        recommendations.append(
-            "Provide premium retention discount."
-        )
-
-        recommendations.append(
-            "Assign dedicated customer support."
-        )
+        revenue_loss *= 2
 
     elif churn_probability > 50:
 
-        recommendations.append(
-            "Offer loyalty rewards."
-        )
+        revenue_loss *= 1.5
 
-        recommendations.append(
-            "Suggest upgraded plans."
-        )
+    # =====================================
+    # RISK LEVEL
+    # =====================================
+
+    if churn_probability > 80:
+
+        risk = "🔴 CRITICAL"
+
+    elif churn_probability > 50:
+
+        risk = "🟠 HIGH"
+
+    elif churn_probability > 30:
+
+        risk = "🟡 MEDIUM"
 
     else:
 
-        recommendations.append(
-            "Customer is stable."
-        )
+        risk = "🟢 LOW"
 
     # =====================================
-    # RESULTS
+    # DASHBOARD CARDS
     # =====================================
 
-    st.subheader("📊 Customer Intelligence Report")
+    st.subheader("📊 Customer Intelligence Dashboard")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
-    # Churn
     with col1:
-
-        if churn_prediction == 1:
-
-            st.error(
-                "🚨 Customer Likely to Churn"
-            )
-
-        else:
-
-            st.success(
-                "✅ Customer Likely to Stay"
-            )
 
         st.metric(
             "Churn Probability",
             f"{churn_probability:.2f}%"
         )
 
-    # Revenue
     with col2:
 
         st.metric(
-            "Expected Revenue Loss",
+            "Risk Level",
+            risk
+        )
+
+    with col3:
+
+        st.metric(
+            "Revenue Risk",
             f"${revenue_loss:.2f}"
         )
 
-    # Cluster
-    with col3:
+    with col4:
 
         st.metric(
             "Customer Segment",
@@ -373,23 +387,106 @@ elif churn_probability > 50:
     )
 
     # =====================================
+    # CUSTOMER STATUS
+    # =====================================
+
+    st.divider()
+
+    if churn_prediction == 1:
+
+        st.error(
+            "🚨 Customer is highly likely to churn."
+        )
+
+    else:
+
+        st.success(
+            "✅ Customer is likely to stay."
+        )
+
+    # =====================================
     # RECOMMENDATIONS
     # =====================================
 
     st.subheader(
-        "📌 Retention Recommendations"
+        "📌 AI Retention Recommendations"
     )
+
+    recommendations = []
+
+    if churn_probability > 80:
+
+        recommendations = [
+            "Provide premium retention discounts.",
+            "Assign dedicated relationship manager.",
+            "Offer long-term subscription benefits.",
+            "Initiate immediate customer engagement."
+        ]
+
+    elif churn_probability > 50:
+
+        recommendations = [
+            "Provide loyalty rewards.",
+            "Recommend upgraded telecom plans.",
+            "Offer personalized promotions."
+        ]
+
+    else:
+
+        recommendations = [
+            "Customer relationship is stable.",
+            "Continue regular engagement campaigns."
+        ]
 
     for rec in recommendations:
 
-        st.info(rec)
+        st.markdown(
+            f"""
+            <div class='recommendation-card'>
+            ✅ {rec}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    # =====================================
+    # ANALYTICS
+    # =====================================
+
+    st.divider()
+
+    st.subheader("📈 AI Insights")
+
+    insight1, insight2 = st.columns(2)
+
+    with insight1:
+
+        st.info(
+            f"""
+            📊 Customers in Cluster {cluster}
+            show similar telecom usage patterns.
+            """
+        )
+
+    with insight2:
+
+        st.warning(
+            f"""
+            💡 Estimated revenue impact:
+            ${revenue_loss:.2f} per month.
+            """
+        )
 
 # =========================================
 # FOOTER
 # =========================================
 
-st.markdown("---")
+st.divider()
 
-st.markdown(
-    "Built with ❤️ using Streamlit, Random Forest & K-Means"
-)
+st.markdown("""
+<div style='text-align:center;color:gray;'>
+
+Built with ❤️ using Streamlit • Random Forest • K-Means • AI Analytics
+
+</div>
+""", unsafe_allow_html=True)
