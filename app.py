@@ -257,10 +257,33 @@ if st.button("🔍 Analyze Customer"):
     # REVENUE LOSS PREDICTION
     # =====================================
 
-    revenue_loss = (
-        revenue_model.predict(input_df)[0]
-    )
+    # =====================================
+# REVENUE LOSS ESTIMATION
+# =====================================
 
+monthly_charges = input_data.get(
+    "MonthlyCharges",
+    0
+)
+
+tenure = input_data.get(
+    "tenure",
+    1
+)
+
+# Estimated revenue risk
+revenue_loss = (
+    monthly_charges * 0.35
+)
+
+# High churn customers lose more
+if churn_probability > 80:
+
+    revenue_loss *= 2
+
+elif churn_probability > 50:
+
+    revenue_loss *= 1.5
     # =====================================
     # CUSTOMER SEGMENTATION
     # =====================================
